@@ -65,6 +65,7 @@ export default class BitbucketBackend implements Implementation {
     API: API | null;
     updateUserCredentials: (args: { token: string; refresh_token: string }) => Promise<null>;
     initialWorkflowStatus: string;
+    labelPrefix: string,
   };
   repo: string;
   branch: string;
@@ -89,6 +90,7 @@ export default class BitbucketBackend implements Implementation {
       API: null,
       updateUserCredentials: async () => null,
       initialWorkflowStatus: '',
+      labelPrefix: config.backend.label_prefix || 'netlify-cms/',
       ...options,
     };
 
@@ -167,6 +169,7 @@ export default class BitbucketBackend implements Implementation {
       repo: this.repo,
       squashMerges: this.squashMerges,
       initialWorkflowStatus: this.options.initialWorkflowStatus,
+      labelPrefix: this.options.labelPrefix,
     });
   }
 
@@ -190,6 +193,7 @@ export default class BitbucketBackend implements Implementation {
       apiRoot: this.apiRoot,
       squashMerges: this.squashMerges,
       initialWorkflowStatus: this.options.initialWorkflowStatus,
+      labelPrefix: this.options.labelPrefix,
     });
 
     const isCollab = await this.api.hasWriteAccess().catch(error => {

@@ -1,8 +1,8 @@
 import { API as GitlabAPI } from 'netlify-cms-backend-gitlab';
-import { Config as GitHubConfig, CommitAuthor } from 'netlify-cms-backend-gitlab/src/API';
+import { Config as GitLabConfig, CommitAuthor } from 'netlify-cms-backend-gitlab/src/API';
 import { unsentRequest, ApiRequest } from 'netlify-cms-lib-util';
 
-type Config = GitHubConfig & { tokenPromise: () => Promise<string>; commitAuthor: CommitAuthor };
+type Config = GitLabConfig & { tokenPromise: () => Promise<string>; commitAuthor: CommitAuthor };
 
 export default class API extends GitlabAPI {
   tokenPromise: () => Promise<string>;

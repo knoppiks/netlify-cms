@@ -46,6 +46,7 @@ export default class GitLab implements Implementation {
     proxied: boolean;
     API: API | null;
     initialWorkflowStatus: string;
+    labelPrefix: string;
   };
   repo: string;
   branch: string;
@@ -62,6 +63,7 @@ export default class GitLab implements Implementation {
       proxied: false,
       API: null,
       initialWorkflowStatus: '',
+      labelPrefix: config.backend.label_prefix || 'netlfy-cms/',
       ...options,
     };
 
@@ -118,6 +120,7 @@ export default class GitLab implements Implementation {
       apiRoot: this.apiRoot,
       squashMerges: this.squashMerges,
       initialWorkflowStatus: this.options.initialWorkflowStatus,
+      labelPrefix: this.options.labelPrefix,
     });
     const user = await this.api.user();
     const isCollab = await this.api.hasWriteAccess().catch((error: Error) => {

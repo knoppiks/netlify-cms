@@ -41,6 +41,7 @@ interface Config {
   hasWriteAccess?: () => Promise<boolean>;
   squashMerges: boolean;
   initialWorkflowStatus: string;
+  labelPrefix: string;
 }
 
 interface CommitAuthor {
@@ -203,6 +204,7 @@ export default class API {
   commitAuthor?: CommitAuthor;
   mergeStrategy: string;
   initialWorkflowStatus: string;
+  labelPrefix: string;
 
   constructor(config: Config) {
     this.apiRoot = config.apiRoot || 'https://api.bitbucket.org/2.0';
@@ -214,6 +216,7 @@ export default class API {
     this.repoURL = this.repo ? `/repositories/${this.repo}` : '';
     this.mergeStrategy = config.squashMerges ? 'squash' : 'merge_commit';
     this.initialWorkflowStatus = config.initialWorkflowStatus;
+    this.labelPrefix = config.labelPrefix;
   }
 
   buildRequest = (req: ApiRequest) => {
@@ -554,7 +557,7 @@ export default class API {
       }),
     });
     // use comments for status labels
-    await this.addPullRequestComment(pullRequest, statusToLabel(status));
+    await this.addPullRequestComment(pullRequest, statusToLabel(this.labelPrefix, status));
   }
 
   async getDifferences(source: string, destination: string = this.branch) {
@@ -643,8 +646,8 @@ export default class API {
       params: {
         pagelen: 50,
         q: oneLine`
-        source.repository.full_name = "${this.repo}" 
-        AND state = "${BitBucketPullRequestState.OPEN}" 
+        source.repository.full_name = "${this.repo}"
+        AND state = "${BitBucketPullRequestState.OPEN}"
         AND destination.branch.name = "${this.branch}"
         AND comment_count > 0
         AND ${sourceQuery}
@@ -656,7 +659,7 @@ export default class API {
       pullRequests.values.map(pr => this.getPullRequestLabel(pr.id)),
     );
 
-    return pullRequests.values.filter((_, index) => isCMSLabel(labels[index]));
+    return pullRequests.values.filter((_, index) => isCMSLabel(this.labelPrefix, labels[index]));
   }
 
   async getBranchPullRequest(branch: string) {
@@ -686,7 +689,7 @@ export default class API {
     const pullRequest = await this.getBranchPullRequest(branch);
     const diffs = await this.getDifferences(branch);
     const label = await this.getPullRequestLabel(pullRequest.id);
-    const status = labelToStatus(label);
+    const status = labelToStatus(this.labelPrefix, label);
     const updatedAt = pullRequest.updated_on;
     return {
       collection,
@@ -705,7 +708,7 @@ export default class API {
     const branch = branchFromContentKey(contentKey);
     const pullRequest = await this.getBranchPullRequest(branch);
 
-    await this.addPullRequestComment(pullRequest, statusToLabel(newStatus));
+    await this.addPullRequestComment(pullRequest, statusToLabel(this.labelPrefix, newStatus));
   }
 
   async mergePullRequest(pullRequest: BitBucketPullRequest) {

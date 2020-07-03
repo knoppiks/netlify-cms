@@ -41,6 +41,7 @@ export interface Config {
   repo?: string;
   squashMerges: boolean;
   initialWorkflowStatus: string;
+  labelPrefix: string;
 }
 
 export interface CommitAuthor {
@@ -189,6 +190,7 @@ export default class API {
   commitAuthor?: CommitAuthor;
   squashMerges: boolean;
   initialWorkflowStatus: string;
+  labelPrefix: string;
 
   constructor(config: Config) {
     this.apiRoot = config.apiRoot || 'https://gitlab.com/api/v4';
@@ -198,6 +200,7 @@ export default class API {
     this.repoURL = `/projects/${encodeURIComponent(this.repo)}`;
     this.squashMerges = config.squashMerges;
     this.initialWorkflowStatus = config.initialWorkflowStatus;
+    this.labelPrefix = config.labelPrefix;
   }
 
   withAuthorizationHeaders = (req: ApiRequest) => {
@@ -554,9 +557,9 @@ export default class API {
         ...(sourceBranch ? { source_branch: sourceBranch } : {}),
       },
     });
-
+    const cmsLabelFilter = (label: string) => isCMSLabel(this.labelPrefix, label);
     return mergeRequests.filter(
-      mr => mr.source_branch.startsWith(CMS_BRANCH_PREFIX) && mr.labels.some(isCMSLabel),
+      mr => mr.source_branch.startsWith(CMS_BRANCH_PREFIX) && mr.labels.some(cmsLabelFilter),
     );
   }
 
@@ -657,8 +660,9 @@ export default class API {
         return { id, path, newFile };
       }),
     );
-    const label = mergeRequest.labels.find(isCMSLabel) as string;
-    const status = labelToStatus(label);
+    const cmsLabelFilter = (label: string) => isCMSLabel(this.labelPrefix, label);
+    const label = mergeRequest.labels.find(cmsLabelFilter) as string;
+    const status = labelToStatus(this.labelPrefix, label);
     const updatedAt = mergeRequest.updated_at;
     return {
       collection,
@@ -709,7 +713,7 @@ export default class API {
         target_branch: this.branch,
         title: commitMessage,
         description: DEFAULT_PR_BODY,
-        labels: statusToLabel(status),
+        labels: statusToLabel(this.labelPrefix, status),
         // eslint-disable-next-line @typescript-eslint/camelcase
         remove_source_branch: true,
         squash: this.squashMerges,
@@ -770,8 +774,8 @@ export default class API {
     const mergeRequest = await this.getBranchMergeRequest(branch);
 
     const labels = [
-      ...mergeRequest.labels.filter(label => !isCMSLabel(label)),
-      statusToLabel(newStatus),
+      ...mergeRequest.labels.filter(label => !isCMSLabel(this.labelPrefix, label)),
+      statusToLabel(this.labelPrefix, newStatus),
     ];
     await this.updateMergeRequestLabels(mergeRequest, labels);
   }

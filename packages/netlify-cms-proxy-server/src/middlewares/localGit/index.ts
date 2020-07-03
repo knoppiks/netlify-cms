@@ -67,6 +67,7 @@ const branchDescription = (branch: string) => `branch.${branch}.description`;
 
 type Options = {
   repoPath: string;
+  labelPrefix: string;
 };
 
 const commitEntry = async (
@@ -155,7 +156,7 @@ export const getSchema = ({ repoPath }: Options) => {
   return schema;
 };
 
-export const localGitMiddleware = ({ repoPath }: Options) => {
+export const localGitMiddleware = ({ repoPath, labelPrefix}: Options) => {
   const git = simpleGit(repoPath).silent(false);
 
   return async function(req: express.Request, res: express.Response) {
@@ -228,7 +229,7 @@ export const localGitMiddleware = ({ repoPath }: Options) => {
           if (branchExists) {
             const diffs = await getDiffs(git, branch, cmsBranch);
             const label = await git.raw(['config', branchDescription(cmsBranch)]);
-            const status = label && labelToStatus(label.trim());
+            const status = label && labelToStatus(labelPrefix, label.trim());
             const unpublishedEntry = {
               collection,
               slug,
@@ -300,7 +301,7 @@ export const localGitMiddleware = ({ repoPath }: Options) => {
 
               // add status for new entries
               if (!branchExists) {
-                const description = statusToLabel(options.status);
+                const description = statusToLabel(labelPrefix, options.status);
                 await git.addConfig(branchDescription(cmsBranch), description);
               }
             });
@@ -312,7 +313,7 @@ export const localGitMiddleware = ({ repoPath }: Options) => {
           const { collection, slug, newStatus } = body.params as UpdateUnpublishedEntryStatusParams;
           const contentKey = generateContentKey(collection, slug);
           const cmsBranch = branchFromContentKey(contentKey);
-          const description = statusToLabel(newStatus);
+          const description = statusToLabel(labelPrefix, newStatus);
           await git.addConfig(branchDescription(cmsBranch), description);
           res.json({ message: `${branch} description was updated to ${description}` });
           break;
@@ -394,8 +395,9 @@ export const localGitMiddleware = ({ repoPath }: Options) => {
 
 export const registerMiddleware = async (app: express.Express) => {
   const repoPath = path.resolve(process.env.GIT_REPO_DIRECTORY || process.cwd());
-  await validateRepo({ repoPath });
-  app.post('/api/v1', joi(getSchema({ repoPath })));
-  app.post('/api/v1', localGitMiddleware({ repoPath }));
+  const labelPrefix = 'netlify-cms/'
+  await validateRepo({ repoPath , labelPrefix});
+  app.post('/api/v1', joi(getSchema({ repoPath , labelPrefix})));
+  app.post('/api/v1', localGitMiddleware({ repoPath , labelPrefix}));
   console.log(`Netlify CMS Git Proxy Server configured with ${repoPath}`);
 };

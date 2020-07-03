@@ -19,23 +19,23 @@ describe('APIUtils', () => {
 
   describe('isCMSLabel', () => {
     it('should return true for CMS label', () => {
-      expect(apiUtils.isCMSLabel('netlify-cms/draft')).toBe(true);
+      expect(apiUtils.isCMSLabel('netlify-cms/', 'netlify-cms/draft')).toBe(true);
     });
 
     it('should return false for non CMS label', () => {
-      expect(apiUtils.isCMSLabel('other/label')).toBe(false);
+      expect(apiUtils.isCMSLabel('netlify-cms/', 'other/label')).toBe(false);
     });
   });
 
   describe('labelToStatus', () => {
     it('should get status from label', () => {
-      expect(apiUtils.labelToStatus('netlify-cms/draft')).toBe('draft');
+      expect(apiUtils.labelToStatus('netlify-cms/', 'netlify-cms/draft')).toBe('draft');
     });
   });
 
   describe('statusToLabel', () => {
     it('should generate label from status', () => {
-      expect(apiUtils.statusToLabel('draft')).toBe('netlify-cms/draft');
+      expect(apiUtils.statusToLabel('netlify-cms/', 'draft')).toBe('netlify-cms/draft');
     });
   });
 });
